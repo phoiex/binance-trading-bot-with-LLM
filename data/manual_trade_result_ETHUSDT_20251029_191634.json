@@ -1,0 +1,9 @@
+[
+  {
+    "symbol": "ETHUSDT",
+    "action": "short",
+    "success": false,
+    "error": "订单状态: CANCELED",
+    "timestamp": "2025-10-29T19:16:34.730412"
+  }
+]

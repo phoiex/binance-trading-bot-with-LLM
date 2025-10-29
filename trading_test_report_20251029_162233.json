@@ -1,0 +1,92 @@
+{
+  "test_summary": {
+    "total_tests": 8,
+    "passed_tests": 0,
+    "failed_tests": 8,
+    "overall_result": "FAILED",
+    "test_amount_used": 0.06,
+    "timestamp": "2025-10-29T16:22:33.410601"
+  },
+  "detailed_results": [
+    {
+      "test_name": "开多仓测试",
+      "test_function": "test_long_entry",
+      "result": {
+        "passed": false,
+        "error": "开多仓测试异常: 'coroutine' object does not support the asynchronous context manager protocol"
+      },
+      "timestamp": "2025-10-29T16:22:33.410220",
+      "passed": false
+    },
+    {
+      "test_name": "开空仓测试",
+      "test_function": "test_short_entry",
+      "result": {
+        "passed": false,
+        "error": "开空仓测试异常: 'coroutine' object does not support the asynchronous context manager protocol"
+      },
+      "timestamp": "2025-10-29T16:22:33.410327",
+      "passed": false
+    },
+    {
+      "test_name": "仓位管理测试",
+      "test_function": "test_position_management",
+      "result": {
+        "passed": false,
+        "error": "仓位管理测试异常: 'coroutine' object does not support the asynchronous context manager protocol"
+      },
+      "timestamp": "2025-10-29T16:22:33.410366",
+      "passed": false
+    },
+    {
+      "test_name": "止损止盈测试",
+      "test_function": "test_stop_loss_take_profit",
+      "result": {
+        "passed": false,
+        "error": "止损止盈测试异常: 'coroutine' object does not support the asynchronous context manager protocol"
+      },
+      "timestamp": "2025-10-29T16:22:33.410396",
+      "passed": false
+    },
+    {
+      "test_name": "订单操作测试",
+      "test_function": "test_order_operations",
+      "result": {
+        "passed": false,
+        "error": "订单操作测试异常: 'coroutine' object does not support the asynchronous context manager protocol"
+      },
+      "timestamp": "2025-10-29T16:22:33.410425",
+      "passed": false
+    },
+    {
+      "test_name": "平仓测试",
+      "test_function": "test_position_closing",
+      "result": {
+        "passed": false,
+        "error": "平仓测试异常: 'coroutine' object does not support the asynchronous context manager protocol"
+      },
+      "timestamp": "2025-10-29T16:22:33.410486",
+      "passed": false
+    },
+    {
+      "test_name": "杠杆调整测试",
+      "test_function": "test_leverage_adjustment",
+      "result": {
+        "passed": false,
+        "error": "杠杆调整测试异常: 'coroutine' object does not support the asynchronous context manager protocol"
+      },
+      "timestamp": "2025-10-29T16:22:33.410560",
+      "passed": false
+    },
+    {
+      "test_name": "错误处理测试",
+      "test_function": "test_error_handling",
+      "result": {
+        "passed": false,
+        "error": "错误处理测试异常: 'coroutine' object does not support the asynchronous context manager protocol"
+      },
+      "timestamp": "2025-10-29T16:22:33.410592",
+      "passed": false
+    }
+  ]
+}

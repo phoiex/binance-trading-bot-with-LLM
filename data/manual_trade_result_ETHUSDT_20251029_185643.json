@@ -1,0 +1,16 @@
+[
+  {
+    "symbol": "ETHUSDT",
+    "action": "short",
+    "side": "SELL",
+    "position_size": 0.3,
+    "leverage": 6,
+    "price": 3991.24,
+    "quantity": 0.064,
+    "order_id": 8389765999335542863,
+    "order_type": "LIMIT",
+    "success": true,
+    "dry_run": false,
+    "timestamp": "2025-10-29T18:56:43.257206"
+  }
+]

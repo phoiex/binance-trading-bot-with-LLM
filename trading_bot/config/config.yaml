@@ -1,0 +1,127 @@
+# 精简版期货交易Bot配置
+
+# API配置
+apis:
+  # Binance Futures API
+  binance:
+    api_key: ""
+    api_secret: ""
+    testnet: false  # ⚠️ 使用主网真实资金
+
+  # DeepSeek AI API
+  deepseek:
+    api_key: ""
+    base_url: "https://api.deepseek.com"
+
+# 期货交易配置
+trading:
+  # 目标币种
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+    - "SOLUSDT"
+
+  # 仓位管理
+  position_management:
+    max_position_size: 1.0        # [deprecated] 最大仓位比例（已废弃，改用 usdt_amount 金额模式）
+    stop_loss_percent: 0.15       # 止损比例 (15%)
+    take_profit_percent: 0.15     # 止盈比例 (15%)
+
+  # 期货配置
+  futures:
+    default_leverage: 1           # 默认杠杆倍数
+    max_leverage: 20              # 最大杠杆倍数
+    margin_type: "CROSSED"        # 保证金模式
+
+  # 交易模式
+  mode:
+    dry_run: false                # 禁用模拟交易，使用真实交易
+    # auto_execute: false         # ⚠️ 已废弃参数，使用 --execute 命令行参数控制
+
+  # 订单类型配置
+  order_settings:
+    # 默认订单类型: MARKET(市价单) 或 LIMIT(限价单)
+    default_order_type: "MARKET"
+    # 非 reduce-only 订单的名义价值下限（USDT），避免交易所 -4164 错误
+    min_notional_usdt: 5.0
+
+    # 限价单设置
+    limit_order:
+      # 限价单相对市价的偏移百分比 (正数为高于市价，负数为低于市价)
+      price_offset_percent: 0.1
+      # 限价单最大等待时间(秒)，超时后取消订单（按需调整为12分钟 = 720秒）
+      max_wait_time: 720
+
+    # 市价单设置
+    market_order:
+      # 市价单滑点保护百分比
+      slippage_protection: 0.5
+
+  # 交易安全设置
+  safety:
+    # 实际交易确认机制
+    real_trading_enabled: true    # 启用真实交易（testnet环境）
+
+    # 交易前确认检查
+    pre_trade_checks:
+      # 是否检查账户余额充足
+      check_balance: true
+      # 是否检查市场流动性
+      check_liquidity: true
+      # 是否检查价格异常
+      check_price_anomaly: true
+      # 最大单笔交易金额(USDT)
+      max_trade_amount: 1000
+
+    # 紧急停止机制
+    emergency_stop:
+      # 单日最大亏损百分比，超过后停止交易
+      max_daily_loss_percent: 20
+      # 连续失败交易次数，超过后停止
+      max_consecutive_losses: 5         
+
+# 风险管理 - 由AI完全决策，无系统限制
+# risk_management: 已废弃，由AI完全控制风险决策
+
+  # 黑名单币种（可选保留，暂未实现）
+  # blacklist_symbols:
+  #   - "LUNAUSDT"  # 示例
+
+# 策略配置
+strategy_prompts:
+  conservative: |
+    保守期货交易策略：
+    - 低杠杆操作 (1-3x)
+    - 严格止损设置
+    - 技术指标多重确认
+    - 避免高波动时段
+
+  aggressive: |
+    相对激进期货交易策略：
+    - 中高杠杆操作 (1-20x)
+    - 严格止损设置
+    - 积极捕捉趋势机会
+    - 基于动量和突破操作
+    - 冷静分析仔细决策
+
+  trend_following: |
+    趋势跟踪期货策略：
+    - 跟随主要趋势方向
+    - 趋势确认后加仓
+    - 移动止损保护利润
+    - 趋势反转及时平仓
+
+# 系统配置
+logging:
+  level: "INFO"
+  file: "logs/futures_bot.log"
+
+# 数据存储（暂未实现，数据自动保存到固定位置）
+# data_storage:
+#   save_analysis: true
+#   save_trades: true
+#   data_dir: "data"
+
+runtime:
+  analysis_interval: 300          # ⚠️ 未使用，固定15分钟间隔
+  max_runtime: 166400            # 24小时最大运行时间

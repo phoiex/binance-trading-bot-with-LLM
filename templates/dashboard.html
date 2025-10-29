@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI交易监控面板</title>
+
+    <!-- 引入Chart.js和Socket.IO -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .container {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            color: #fff;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 0.5rem;
+        }
+
+        .account-overview {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .metric {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .positive { color: #4CAF50; }
+        .negative { color: #f44336; }
+        .neutral { color: #fff; }
+
+        .positions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .positions-table th,
+        .positions-table td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .positions-table th {
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+        }
+
+        .market-data {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .symbol-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .symbol-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .symbol-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .symbol-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0.25rem 0;
+        }
+
+        .symbol-change {
+            font-size: 0.9rem;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .ai-content {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .ai-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .ai-section h3 {
+            margin-bottom: 0.5rem;
+            color: #4CAF50;
+            font-size: 1.1rem;
+        }
+
+        /* 最终交易判断列表样式 */
+        .final-judgment-item {
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border-left: 3px solid #ffeb3b;
+        }
+
+        .ai-entry {
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .ai-timestamp {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-content-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            max-height: none;
+            overflow-y: visible;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .decision-card {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4CAF50;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .decision-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .decision-symbol {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .decision-action {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .action-long { background: #4CAF50; color: white; }
+        .action-short { background: #f44336; color: white; }
+        .action-hold { background: #ff9800; color: white; }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            opacity: 0.7;
+        }
+
+        /* 决策理由：完整展示并自动换行 */
+        .decision-reason {
+            margin-top: 0.25rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .last-update {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .ai-content {
+                grid-template-columns: 1fr;
+            }
+
+            .account-overview {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <span class="status-indicator"></span>
+            AI交易监控面板
+        </h1>
+    </div>
+
+    <div id="alerts" style="margin: 10px 20px;">
+        <!-- 警报区域 -->
+    </div>
+
+    <div class="container">
+        <!-- 账户概览 -->
+        <div class="card account-overview">
+            <h2>📊 账户概览</h2>
+            <div class="metric">
+                <div class="metric-value neutral" id="total-balance">$0.00</div>
+                <div class="metric-label">总资产</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="unrealized-pnl">$0.00</div>
+                <div class="metric-label">未实现盈亏</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value neutral" id="available-balance">$0.00</div>
+                <div class="metric-label">可用余额</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value neutral" id="position-count">0</div>
+                <div class="metric-label">持仓数量</div>
+            </div>
+        </div>
+
+        <!-- 当前持仓 -->
+        <div class="card">
+            <h2>📍 当前持仓</h2>
+            <div id="positions-content">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 市场数据 -->
+        <div class="card">
+            <h2>💹 市场数据</h2>
+            <div class="market-data" id="market-data">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 收益图表 -->
+        <div class="card ai-content">
+            <div>
+                <h2>📈 收益走势</h2>
+                <div class="chart-container">
+                    <canvas id="pnlChart"></canvas>
+                </div>
+            </div>
+            <div>
+                <h2>📊 价格走势</h2>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI分析内容 -->
+        <div class="card ai-content">
+            <div class="ai-section">
+                <h2>🤖 AI思考过程</h2>
+                <div id="ai-think-content">
+                    <div class="loading">等待AI分析...</div>
+                </div>
+            </div>
+            <div class="ai-section">
+                <h2>✅ 最终交易判断（最近5条）</h2>
+                <div id="final-judgments-content">
+                    <div class="loading">等待最终交易判断...</div>
+                </div>
+            </div>
+            <div class="ai-section">
+                <h2>🎯 最新交易决策</h2>
+                <div id="ai-decisions-content">
+                    <div class="loading">等待交易决策...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="last-update" id="last-update">
+        最后更新: --
+    </div>
+
+    <script>
+        // WebSocket连接
+        const socket = io();
+
+        // 图表实例
+        let pnlChart = null;
+        let priceChart = null;
+
+        // 初始化图表
+        function initCharts() {
+            console.log('开始初始化图表...');
+
+            // 收益图表
+            const pnlCtx = document.getElementById('pnlChart').getContext('2d');
+            if (!pnlCtx) {
+                console.error('无法找到pnlChart元素');
+                return;
+            }
+            console.log('正在初始化PnL图表...');
+            pnlChart = new Chart(pnlCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '未实现盈亏',
+                        data: [],
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        }
+                    }
+                }
+            });
+            console.log('PnL图表初始化完成');
+
+            // 价格图表
+            const priceCtx = document.getElementById('priceChart').getContext('2d');
+            if (!priceCtx) {
+                console.error('无法找到priceChart元素');
+                return;
+            }
+            console.log('正在初始化价格图表...');
+            priceChart = new Chart(priceCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'BTC',
+                            data: [],
+                            borderColor: '#FF9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'ETH',
+                            data: [],
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'SOL',
+                            data: [],
+                            borderColor: '#9C27B0',
+                            backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        }
+                    }
+                }
+            });
+            console.log('价格图表初始化完成');
+            console.log('所有图表初始化完成！');
+        }
+
+        // 更新账户信息
+        function updateAccount(data) {
+            if (data.error) {
+                console.error('账户数据错误:', data.error);
+                return;
+            }
+
+            document.getElementById('total-balance').textContent = `$${data.total_balance.toFixed(2)}`;
+
+            const pnlElement = document.getElementById('unrealized-pnl');
+            pnlElement.textContent = `$${data.unrealized_pnl.toFixed(2)}`;
+            pnlElement.className = 'metric-value ' + (data.unrealized_pnl >= 0 ? 'positive' : 'negative');
+
+            document.getElementById('available-balance').textContent = `$${data.available_balance.toFixed(2)}`;
+            document.getElementById('position-count').textContent = data.position_count;
+
+            // 更新持仓表格
+            updatePositions(data.positions);
+        }
+
+        // 更新持仓信息
+        function updatePositions(positions) {
+            const container = document.getElementById('positions-content');
+
+            if (!positions || positions.length === 0) {
+                container.innerHTML = '<div class="loading">当前无持仓</div>';
+                return;
+            }
+
+            let html = '<table class="positions-table"><thead><tr><th>币种</th><th>方向</th><th>数量</th><th>入场价</th><th>当前价</th><th>盈亏</th></tr></thead><tbody>';
+
+            positions.forEach(pos => {
+                const amount = parseFloat(pos.positionAmt);
+                if (amount === 0) return;
+
+                const direction = amount > 0 ? '多头' : '空头';
+                const pnl = parseFloat(pos.unRealizedProfit);
+                const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+
+                html += `
+                    <tr>
+                        <td>${pos.symbol}</td>
+                        <td>${direction}</td>
+                        <td>${Math.abs(amount).toFixed(6)}</td>
+                        <td>$${parseFloat(pos.entryPrice).toFixed(2)}</td>
+                        <td>$${parseFloat(pos.markPrice).toFixed(2)}</td>
+                        <td class="${pnlClass}">$${pnl.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // 更新市场数据
+        function updateMarket(data) {
+            console.log('updateMarket 接收到的数据:', data);
+            const container = document.getElementById('market-data');
+            if (!container) {
+                console.error('未找到 market-data 容器');
+                return;
+            }
+
+            let html = '';
+
+            // 确保data是对象且不为空
+            if (!data || typeof data !== 'object') {
+                console.error('市场数据格式错误:', data);
+                container.innerHTML = '<div class="error">市场数据格式错误</div>';
+                return;
+            }
+
+            Object.entries(data).forEach(([symbol, info]) => {
+                console.log(`处理符号 ${symbol}:`, info);
+
+                if (!info || info.error) {
+                    console.log(`跳过符号 ${symbol}: 有错误或为空`);
+                    return;
+                }
+
+                // 安全的数值处理
+                const price = parseFloat(info.price) || 0;
+                const change = parseFloat(info.change) || 0;
+
+                const changeClass = change >= 0 ? 'positive' : 'negative';
+                const changeSign = change >= 0 ? '+' : '';
+
+                html += `
+                    <div class="symbol-card">
+                        <div class="symbol-info">
+                            <div class="symbol-name">${symbol}</div>
+                            <div class="symbol-price">$${price.toLocaleString()}</div>
+                            <div class="symbol-change ${changeClass}">${changeSign}${change.toFixed(2)}%</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            console.log('市场数据更新完成');
+        }
+
+        // 更新AI内容
+        function updateAIContent(data) {
+            if (data.error) {
+                console.error('AI内容错误:', data.error);
+                return;
+            }
+
+            // 更新思考内容
+            const thinkContainer = document.getElementById('ai-think-content');
+            if (data.think_content && typeof data.think_content === 'string' && data.think_content.trim()) {
+                const html = `
+                    <div class="ai-entry">
+                        <div class="ai-content-text">${data.think_content}</div>
+                    </div>
+                `;
+                thinkContainer.innerHTML = html;
+            } else {
+                thinkContainer.innerHTML = '<div class="ai-entry"><div class="ai-content-text">暂无AI思考内容</div></div>';
+            }
+
+            // 更新最终交易判断（最近5条）
+            const fjContainer = document.getElementById('final-judgments-content');
+            if (Array.isArray(data.final_judgments) && data.final_judgments.length > 0) {
+                let fjHtml = '';
+                data.final_judgments.forEach((item) => {
+                    fjHtml += `
+                        <div class="final-judgment-item">
+                            <div class="ai-content-text">${item}</div>
+                        </div>
+                    `;
+                });
+                fjContainer.innerHTML = fjHtml;
+            } else {
+                fjContainer.innerHTML = '<div class="final-judgment-item"><div class="ai-content-text">暂无最终交易判断</div></div>';
+            }
+
+            // 更新交易决策
+            const decisionsContainer = document.getElementById('ai-decisions-content');
+            if (data.latest_decisions && data.latest_decisions.length > 0) {
+                let html = '';
+                data.latest_decisions.forEach(decision => {
+                    const actionClass = `action-${String(decision.action || '').toLowerCase()}`;
+                    html += `
+                        <div class="decision-card">
+                            <div class="decision-header">
+                                <span class="decision-symbol">${decision.symbol}</span>
+                                <span class="decision-action ${actionClass}">${decision.action.toUpperCase()}</span>
+                            </div>
+                            <div>信心度: ${decision.confidence}%</div>
+                            <div>入场价: $${decision.entry_price}</div>
+                            <div>杠杆: ${decision.leverage}x</div>
+                            <div class="decision-reason">理由: ${decision.reason}</div>
+                        </div>
+                    `;
+                });
+                decisionsContainer.innerHTML = html;
+            }
+        }
+
+        // 更新图表
+        function updateCharts(priceHistory, pnlHistory) {
+            console.log('updateCharts 被调用:', { priceHistory, pnlHistory });
+
+            if (pnlHistory && pnlHistory.length > 0) {
+                console.log('更新PnL图表，数据长度:', pnlHistory.length);
+                const labels = pnlHistory.map(item => new Date(item.timestamp).toLocaleTimeString());
+                const data = pnlHistory.map(item => item.unrealized_pnl);
+
+                if (pnlChart) {
+                    pnlChart.data.labels = labels;
+                    pnlChart.data.datasets[0].data = data;
+                    pnlChart.update();
+                    console.log('PnL图表更新成功');
+                } else {
+                    console.error('pnlChart未初始化');
+                }
+            } else {
+                console.log('PnL历史数据为空或无效');
+            }
+
+            if (priceHistory && priceHistory.length > 0) {
+                console.log('更新价格图表，数据长度:', priceHistory.length);
+                const labels = priceHistory.map(item => new Date(item.timestamp).toLocaleTimeString());
+
+                if (priceChart) {
+                    priceChart.data.labels = labels;
+
+                    // 更新BTC数据
+                    if (priceHistory[0].BTCUSDT !== undefined) {
+                        priceChart.data.datasets[0].data = priceHistory.map(item => item.BTCUSDT);
+                        console.log('BTC数据已更新');
+                    }
+
+                    // 更新ETH数据
+                    if (priceHistory[0].ETHUSDT !== undefined) {
+                        priceChart.data.datasets[1].data = priceHistory.map(item => item.ETHUSDT);
+                        console.log('ETH数据已更新');
+                    }
+
+                    // 更新SOL数据
+                    if (priceHistory[0].SOLUSDT !== undefined) {
+                        priceChart.data.datasets[2].data = priceHistory.map(item => item.SOLUSDT);
+                        console.log('SOL数据已更新');
+                    }
+
+                    priceChart.update();
+                    console.log('价格图表更新成功');
+                } else {
+                    console.error('priceChart未初始化');
+                }
+            } else {
+                console.log('价格历史数据为空或无效');
+            }
+        }
+
+        // 更新告警
+        async function updateAlerts() {
+            try {
+                const res = await fetch('/api/alerts');
+                const data = await res.json();
+                const container = document.getElementById('alerts');
+                if (Array.isArray(data) && data.length > 0) {
+                    let html = '';
+                    data.slice(-5).forEach(msg => {
+                        html += `<div style="background:#ffeded;border:1px solid #ff5252;color:#a70000;padding:8px 12px;border-radius:6px;margin-bottom:6px;">⚠️ ${msg}</div>`;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '';
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        // WebSocket事件处理
+        socket.on('connect', function() {
+            console.log('已连接到服务器');
+        });
+
+        socket.on('data_update', function(data) {
+            console.log('收到数据更新:', data);
+
+            updateAccount(data.account);
+            updateMarket(data.market.symbols || data.market);
+            updateAIContent(data.ai_content);
+            updateCharts(data.price_history, data.pnl_history);
+
+            // 更新时间戳
+            document.getElementById('last-update').textContent =
+                `最后更新: ${new Date().toLocaleTimeString()}`;
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+
+            // 首次加载数据
+            loadInitialData();
+            updateAlerts();
+            setInterval(updateAlerts, 10000);
+        });
+
+        // 首次加载数据
+        async function loadInitialData() {
+            try {
+                const [accountResponse, marketResponse, aiResponse] = await Promise.all([
+                    fetch('/api/account'),
+                    fetch('/api/market'),
+                    fetch('/api/ai_content')
+                ]);
+
+                const account = await accountResponse.json();
+                const market = await marketResponse.json();
+                const aiContent = await aiResponse.json();
+
+                updateAccount(account);
+                updateMarket(market.symbols || market);
+                updateAIContent(aiContent);
+
+                // 加载历史数据
+                const [priceHistoryResponse, pnlHistoryResponse] = await Promise.all([
+                    fetch('/api/history/prices'),
+                    fetch('/api/history/pnl')
+                ]);
+
+                const priceHistory = await priceHistoryResponse.json();
+                const pnlHistory = await pnlHistoryResponse.json();
+
+                updateCharts(priceHistory, pnlHistory);
+
+            } catch (error) {
+                console.error('加载初始数据失败:', error);
+            }
+        }
+    </script>
+</body>
+</html>
