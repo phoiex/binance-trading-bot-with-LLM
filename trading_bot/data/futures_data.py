@@ -518,8 +518,9 @@ class FuturesDataManager:
 
                 # 获取多时间周期数据
                 if include_historical:
+                    # 替换原来的 4h 为 1m，保留其它时间周期
                     multi_klines = await self.get_multi_timeframe_klines(
-                        symbol, ["15m", "1h", "4h", "1d", "1M"]
+                        symbol, ["15m", "1h", "1m", "1d", "1M"]
                     )
                     symbol_data['multi_timeframe_data'] = multi_klines
 

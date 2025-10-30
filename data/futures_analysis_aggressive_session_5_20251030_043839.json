@@ -1,0 +1,82 @@
+{
+  "timestamp": "2025-10-30T04:38:39.135263",
+  "analysis_type": "comprehensive_futures",
+  "futures_data": {
+    "error": "",
+    "symbols": {}
+  },
+  "ai_analysis": {
+    "market_overview": {
+      "overall_sentiment": "neutral",
+      "market_phase": "consolidation",
+      "key_levels": {
+        "support": [],
+        "resistance": []
+      },
+      "volatility_assessment": "medium",
+      "funding_rate_impact": "neutral"
+    },
+    "timeframe_analysis": {
+      "超短期(1-15分钟)": "无市场数据提供，无法进行技术分析。基于账户状态，只能评估无资金可用。",
+      "短期(1-4小时)": "无市场数据提供，无法分析趋势或突破机会。缺乏价格和指标数据，无法确认多时间周期共振。",
+      "中期(日线-周线)": "无市场数据提供，无法评估长期趋势或结构变化。保守假设市场处于整理阶段。",
+      "长期(月线及以上)": "无市场数据提供，无法分析宏观趋势。依赖一般市场知识，但当前无具体信息。"
+    },
+    "recommendations": [
+      {
+        "symbol": "N/A",
+        "action": "hold",
+        "confidence": 100,
+        "timeframe": "all",
+        "order_type": "N/A",
+        "order_reasoning": "无交易操作，因账户无可用资金",
+        "risk_level": "low",
+        "reason": "账户状态分析显示总钱包余额、保证金余额和可用余额均为0.00 USDT，且无当前持仓。因此，无法执行任何建仓或加仓操作，包括使用杠杆。市场数据未被提供，无法进行多时间周期技术分析、期货特有风险评估（如资金费率、持仓量变化）或波动率分析。基于相对激进策略偏好，但受限于资金状况，唯一合理行动是持有现有状态，避免无效交易。交易成本分析显示无预期收益或成本，因无交易执行。",
+        "timeframe_confluence": "无数据可用，无法评估多时间周期一致性",
+        "risk_reward_ratio": "N/A",
+        "cost_benefit_analysis": {
+          "expected_profit_percent": "0%",
+          "trading_cost_percent": "0%",
+          "net_profit_ratio": "N/A",
+          "cost_justification": "无交易执行，因此无手续费或杠杆成本产生"
+        }
+      }
+    ],
+    "risk_warnings": [
+      "账户无可用资金，无法开立新仓位，导致零风险敞口但零收益机会",
+      "缺乏市场数据，交易决策基于有限信息，可能错过潜在趋势机会",
+      "若资金恢复，需重新评估市场条件以应用激进策略"
+    ],
+    "market_catalysts": [
+      "无数据提供，无法识别具体价格影响因素如经济事件或技术突破"
+    ]
+  },
+  "trading_decisions": [],
+  "current_positions": [
+    {
+      "symbol": "BTCUSDT",
+      "position_amount": 0.018,
+      "entry_price": 110748.35,
+      "mark_price": 111142.66835507,
+      "unrealized_pnl": 7.09773039,
+      "percentage": 0.0,
+      "position_side": "BOTH",
+      "isolated": false,
+      "leverage": 5
+    }
+  ],
+  "account_summary": {},
+  "timeframes_analyzed": [
+    "15m",
+    "1h",
+    "4h",
+    "1d",
+    "1M"
+  ],
+  "session_info": {
+    "call_count": 5,
+    "elapsed_minutes": 80,
+    "session_start": "2025-10-30T03:16:04.000827",
+    "current_time": "2025-10-30T04:38:39.135272"
+  }
+}

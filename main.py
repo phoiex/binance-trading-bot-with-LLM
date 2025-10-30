@@ -129,21 +129,13 @@ class FuturesBot:
             elapsed_seconds = int((datetime.now() - self.session_start_time).total_seconds())
             elapsed_minutes = elapsed_seconds // 60
 
-            # 获取基础策略提示
-            base_strategy_prompt = self._get_strategy_prompt(strategy_name)
-
-            # 构建带会话信息的提示
-            session_context = f"""自您开始交易以来已经过去了{elapsed_minutes}分钟。当前时间是{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}，您已被调用{self.session_call_count}次。下面，我们为您提供各种状态数据、价格数据和预测信号。
-
-请在您的分析中包含：
-1. 对当前市场状况的详细分析
-2. 您的交易判断理由和思考过程
-3. 风险评估和仓位管理建议
-4. 具体的交易决策及其理由
-
-{base_strategy_prompt}
-
-重要：请在回复的最后包含一个"思考过程"部分，详细说明您的分析逻辑和决策理由。"""
+            # 构建带会话信息的提示（不再注入历史交易结果；保留“思考过程”要求）
+            session_context = (
+                f"自您开始交易以来已经过去了{elapsed_minutes}分钟。"
+                f"当前时间是{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}，"
+                f"您已被调用{self.session_call_count}次。"
+                "\n\n重要：请在回复的最后包含一个\"思考过程\"部分，详细说明您的分析逻辑和决策理由。"
+            )
 
             symbols = self.config.get('trading', {}).get('symbols', ["BTCUSDT", "ETHUSDT", "SOLUSDT"])
 
@@ -153,7 +145,7 @@ class FuturesBot:
             result = await self.futures_engine.analyze_comprehensive_market(
                 user_prompt=session_context,
                 symbols=symbols,
-                timeframes=["15m", "1h", "4h", "1d", "1M"]
+                timeframes=["1m", "15m", "1h", "1d", "1M"]
             )
 
             # 添加会话信息到结果
@@ -174,6 +166,13 @@ class FuturesBot:
                         dry_run=self.config.get('trading', {}).get('mode', {}).get('dry_run', False)
                     )
                     result['execution_results'] = execution_results
+
+                # 无论是否有决策执行，都做一次遗留TP/SL清理（仅真实交易模式）
+                try:
+                    if not self.config.get('trading', {}).get('mode', {}).get('dry_run', False):
+                        await self.futures_engine.cleanup_orphan_tp_sl_orders()
+                except Exception as e:
+                    self.logger.warning(f"清理遗留TP/SL失败: {e}")
 
             # 保存结果
             if self.config.get('data_storage', {}).get('save_analysis', True):
@@ -223,9 +222,10 @@ class FuturesBot:
             await self.cleanup()
 
     def _get_strategy_prompt(self, strategy_name: str) -> str:
-        """获取策略提示"""
-        prompts = self.config.get('strategy_prompts', {})
-        return prompts.get(strategy_name, prompts.get('aggressive', ''))
+        """获取策略提示（已禁用，交给AI自主决策）"""
+        return ""
+
+    # 已移除读取历史决策并注入到提示的逻辑
 
     async def _save_result(self, result: Dict[str, Any], strategy_name: str):
         """保存分析结果"""
@@ -276,9 +276,8 @@ async def main():
     """主函数"""
     parser = argparse.ArgumentParser(description='精简版期货交易Bot')
     parser.add_argument('--config', default='trading_bot/config/config.yaml', help='配置文件路径')
-    parser.add_argument('--strategy', default='aggressive',
-                       choices=['conservative', 'aggressive', 'trend_following'],
-                       help='交易策略')
+    parser.add_argument('--strategy', default='default',
+                       help='策略标签（仅用于标记/记录，不影响AI提示）')
     parser.add_argument('--execute', action='store_true', help='执行实际交易')
 
     args = parser.parse_args()

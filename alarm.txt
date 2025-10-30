@@ -12,3 +12,20 @@
 2025-10-30T02:25:21.106772 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
 2025-10-30T02:26:42.473137 - API调用重试失败: APIError(code=-2021): Order would immediately trigger.
 2025-10-30T02:26:42.474224 - 设置止盈止损失败 SOLUSDT: APIError(code=-2021): Order would immediately trigger.
+2025-10-30T03:11:47.782506 - 下单失败 BTCUSDT BUY: 订单状态: CANCELED
+2025-10-30T03:46:08.261106 - 下单失败 ETHUSDT BUY: 限价单超时未成交，已取消
+2025-10-30T05:20:25.630566 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T05:20:25.794051 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T05:23:07.630007 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T05:23:07.800158 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T05:28:06.633232 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T05:28:06.736362 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T08:54:16.573228 - API调用重试失败: APIError(code=-2019): Margin is insufficient.
+2025-10-30T08:54:16.574170 - 下市价单失败 ETHUSDT: APIError(code=-2019): Margin is insufficient.
+2025-10-30T08:54:16.574370 - 下单失败 ETHUSDT BUY: APIError(code=-2019): Margin is insufficient.
+2025-10-30T09:23:11.539775 - 下单失败 ETHUSDT BUY: 限价单超时未成交，已取消
+2025-10-30T12:02:30.404216 - API调用重试失败: Cannot connect to host fapi.binance.com:443 ssl:default [None]
+2025-10-30T12:02:30.405463 - 设置止盈止损失败 ETHUSDT: Cannot connect to host fapi.binance.com:443 ssl:default [None]
+2025-10-30T17:45:31.754835 - API调用重试失败: APIError(code=-1021): Timestamp for this request was 1000ms ahead of the server's time.
+2025-10-30T18:25:45.718191 - 下单失败 ETHUSDT BUY: 订单状态: CANCELED
+2025-10-30T18:36:32.950126 - 下单失败 BTCUSDT BUY: 订单状态: CANCELED

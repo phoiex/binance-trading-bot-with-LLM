@@ -1,0 +1,64 @@
+{
+  "timestamp": "2025-10-30T07:12:11.309646",
+  "analysis_type": "comprehensive_futures",
+  "futures_data": {
+    "error": "Cannot connect to host fapi.binance.com:443 ssl:default [None]",
+    "symbols": {}
+  },
+  "ai_analysis": {
+    "market_analysis": "",
+    "recommendations": [],
+    "analysis_quality": "text_extracted",
+    "raw_response": ""
+  },
+  "trading_decisions": [],
+  "current_positions": [
+    {
+      "symbol": "SOLUSDT",
+      "position_amount": 2.56,
+      "entry_price": 195.59,
+      "mark_price": 194.5912193,
+      "unrealized_pnl": -2.55687859,
+      "percentage": 0.0,
+      "position_side": "BOTH",
+      "isolated": false,
+      "leverage": 5
+    },
+    {
+      "symbol": "ETHUSDT",
+      "position_amount": 0.38,
+      "entry_price": 3940.0,
+      "mark_price": 3917.95033333,
+      "unrealized_pnl": -8.37887333,
+      "percentage": 0.0,
+      "position_side": "BOTH",
+      "isolated": false,
+      "leverage": 10
+    },
+    {
+      "symbol": "BTCUSDT",
+      "position_amount": 0.018,
+      "entry_price": 110748.35,
+      "mark_price": 110633.64094203,
+      "unrealized_pnl": -2.06476304,
+      "percentage": 0.0,
+      "position_side": "BOTH",
+      "isolated": false,
+      "leverage": 5
+    }
+  ],
+  "account_summary": {},
+  "timeframes_analyzed": [
+    "15m",
+    "1h",
+    "4h",
+    "1d",
+    "1M"
+  ],
+  "session_info": {
+    "call_count": 7,
+    "elapsed_minutes": 101,
+    "session_start": "2025-10-30T05:28:06.852011",
+    "current_time": "2025-10-30T07:12:11.309653"
+  }
+}

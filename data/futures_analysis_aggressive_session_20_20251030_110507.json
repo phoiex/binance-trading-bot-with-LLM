@@ -1,0 +1,74 @@
+{
+  "timestamp": "2025-10-30T11:05:07.994844",
+  "analysis_type": "comprehensive_futures",
+  "futures_data": {
+    "error": "Cannot connect to host fapi.binance.com:443 ssl:default [None]",
+    "symbols": {}
+  },
+  "ai_analysis": {
+    "market_overview": {
+      "overall_sentiment": "neutral",
+      "market_phase": "consolidation",
+      "key_levels": {
+        "support": [],
+        "resistance": []
+      },
+      "volatility_assessment": "low",
+      "funding_rate_impact": "neutral"
+    },
+    "timeframe_analysis": {
+      "超短期(1-15分钟)": "无市场数据提供，无法进行具体技术分析。基于账户状态，保持观望。",
+      "短期(1-4小时)": "无市场数据提供，趋势和动量无法评估。建议等待数据更新后再做决策。",
+      "中期(日线-周线)": "无市场数据提供，无法分析长期趋势。关注潜在市场催化剂。",
+      "长期(月线及以上)": "无市场数据提供，宏观因素未明。保持谨慎，避免盲目操作。"
+    },
+    "recommendations": [],
+    "risk_warnings": [
+      "账户余额为零，无法开立新仓位。任何开仓操作将因资金不足而失败。",
+      "市场数据缺失，技术分析和风险评估无法进行，增加决策不确定性。",
+      "高杠杆策略在无资金情况下无法执行，需优先确保账户资金充足。"
+    ],
+    "market_catalysts": [
+      "市场数据未提供，潜在催化剂未知。建议监控BTC、ETH、SOL等相关新闻和事件。"
+    ]
+  },
+  "trading_decisions": [],
+  "current_positions": [
+    {
+      "symbol": "SOLUSDT",
+      "position_amount": 7.72,
+      "entry_price": 194.3267357513,
+      "mark_price": 197.45,
+      "unrealized_pnl": 24.11160001,
+      "percentage": 0.0,
+      "position_side": "BOTH",
+      "isolated": false,
+      "leverage": 5
+    },
+    {
+      "symbol": "ETHUSDT",
+      "position_amount": 0.192,
+      "entry_price": 3906.223333333,
+      "mark_price": 3935.76,
+      "unrealized_pnl": 5.67104,
+      "percentage": 0.0,
+      "position_side": "BOTH",
+      "isolated": false,
+      "leverage": 5
+    }
+  ],
+  "account_summary": {},
+  "timeframes_analyzed": [
+    "15m",
+    "1h",
+    "4h",
+    "1d",
+    "1M"
+  ],
+  "session_info": {
+    "call_count": 20,
+    "elapsed_minutes": 335,
+    "session_start": "2025-10-30T05:28:06.852011",
+    "current_time": "2025-10-30T11:05:07.994850"
+  }
+}

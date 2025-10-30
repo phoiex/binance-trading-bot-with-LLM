@@ -1,0 +1,14 @@
+2025-10-29T22:33:41.785212 - 下单失败 BTCUSDT BUY: 限价单超时未成交，已取消
+2025-10-29T22:33:42.258309 - 执行真实期货交易失败 SOLUSDT: 无持仓可减/平
+2025-10-29T23:28:14.735276 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T02:02:32.439565 - API调用重试失败: APIError(code=-1007): Timeout waiting for response from backend server. Send status unknown; execution status unknown.
+2025-10-30T02:02:45.150797 - API调用重试失败: APIError(code=-1007): Timeout waiting for response from backend server. Send status unknown; execution status unknown.
+2025-10-30T02:02:45.151050 - 下限价单失败 BTCUSDT: APIError(code=-1007): Timeout waiting for response from backend server. Send status unknown; execution status unknown.
+2025-10-30T02:02:45.151273 - 下单失败 BTCUSDT BUY: APIError(code=-1007): Timeout waiting for response from backend server. Send status unknown; execution status unknown.
+2025-10-30T02:06:44.997686 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T02:10:11.032735 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T02:18:31.361285 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T02:25:14.786282 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T02:25:21.106772 - API调用重试失败: APIError(code=-2028): Leverage is smaller than permitted: insufficient margin balance.
+2025-10-30T02:26:42.473137 - API调用重试失败: APIError(code=-2021): Order would immediately trigger.
+2025-10-30T02:26:42.474224 - 设置止盈止损失败 SOLUSDT: APIError(code=-2021): Order would immediately trigger.

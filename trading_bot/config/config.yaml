@@ -61,6 +61,8 @@ trading:
   safety:
     # 实际交易确认机制
     real_trading_enabled: true    # 启用真实交易（testnet环境）
+    # 仅执行高置信度建议（大于等于该阈值）
+    min_confidence: 60
 
     # 交易前确认检查
     pre_trade_checks:

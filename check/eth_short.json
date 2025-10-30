@@ -1,0 +1,24 @@
+{
+  "symbol": "BTCUSDT",
+  "action": "long",
+  "confidence": 70,
+  "timeframe": "1-4小时",
+  "entry_price": 113170.0,
+  "stop_loss": 4120.0,
+  "take_profit": 3850.0,
+  "position_size": 0.3,
+  "leverage": 6,
+  "order_type": "LIMIT",
+  "order_reasoning": "ETH在4000附近形成阻力，4小时RSI 24.7显示超卖但反弹乏力，LIMIT订单可更好控制入场价格",
+  "risk_level": "medium",
+  "reason": "ETH技术面显示明显弱势，4小时RSI 24.7严重超卖但价格仍在关键支撑上方，1小时级别价格在SMA20下方运行。资金费率0.0021%对空头有利，持仓量153万显示市场活跃度较高",
+  "timeframe_confluence": "4小时超卖但1小时和日线级别仍偏空，多时间周期共振显示下行压力",
+  "risk_reward_ratio": "1:2.5",
+  "cost_benefit_analysis": {
+    "expected_profit_percent": "2.0%",
+    "trading_cost_percent": "0.06%",
+    "net_profit_ratio": "33.33",
+    "cost_justification": "预期收益率显著高于交易成本，风险收益比优秀"
+  }
+}
+

@@ -86,8 +86,7 @@ class FuturesTradingEngine:
                 testnet=self.testnet
             )
 
-            # 设置初始杠杆
-            await self._initialize_leverage_settings()
+            # 不在启动时批量设置杠杆，避免干预账户默认设置
 
             self.logger.info("期货交易引擎初始化成功")
             return self
@@ -300,6 +299,13 @@ class FuturesTradingEngine:
                 symbol, market_data, market_overview, suggested_leverage
             )
 
+            # 执行阈值：仅在confidence大于配置阈值时执行
+            min_conf = 60.0
+            try:
+                min_conf = float(self.config.get("trading", {}).get("safety", {}).get("min_confidence", 60))
+            except Exception:
+                min_conf = 60.0
+
             decision = {
                 "symbol": symbol,
                 "action": action,  # long/short/hold
@@ -325,7 +331,7 @@ class FuturesTradingEngine:
                 "reduce_usdt": ai_recommendation.get("reduce_usdt"),
                 "close_percent": ai_recommendation.get("close_percent"),
                 "cost_benefit_analysis": ai_recommendation.get("cost_benefit_analysis", {}),
-                "should_execute": action != "hold",  # 完全由AI决策，只排除hold操作
+                "should_execute": (action != "hold" and confidence >= min_conf),
                 "timestamp": datetime.now().isoformat()
             }
 
@@ -519,6 +525,12 @@ class FuturesTradingEngine:
                     "error": str(e),
                     "success": False
                 })
+        # 执行完毕后做一次遗留TP/SL清理，避免仓位关闭后订单堆积
+        try:
+            if not dry_run:
+                await self.cleanup_orphan_tp_sl_orders()
+        except Exception as e:
+            self.logger.warning(f"清理遗留TP/SL时出错: {e}")
 
         return execution_results
 
@@ -723,13 +735,32 @@ class FuturesTradingEngine:
                 # 仅对开/加仓类动作设置止盈止损；
                 # 减/平仓或风控维护类不自动挂新TP/SL，避免无持仓时触发 -2021（订单将立即触发）
                 if action in ["long", "buy", "short", "sell", "add_to_long", "add_to_short"]:
+                    # 先清理历史TP/SL，避免堆积；随后基于最新持仓总量挂新TP/SL
+                    await self._cancel_tp_sl_orders(symbol)
+                    total_qty = quantity
+                    try:
+                        pos = await self._get_position_info(symbol)
+                        if pos:
+                            pq = abs(float(pos.get("position_amount", 0)))
+                            if pq > 0:
+                                total_qty = pq
+                    except Exception:
+                        pass
                     await self._set_stop_loss_take_profit_orders(
                         symbol,
                         side,
-                        quantity,
+                        total_qty,
                         decision["stop_loss_price"],
                         decision["take_profit_prices"]
                     )
+                elif action in ["close_long", "close_short", "reduce_long", "reduce_short"]:
+                    # 减/平仓成功后，如仓位为0，清理遗留TP/SL
+                    try:
+                        pos = await self._get_position_info(symbol)
+                        if not pos or abs(float(pos.get("position_amount", 0))) <= 0:
+                            await self._cancel_tp_sl_orders(symbol)
+                    except Exception:
+                        pass
 
                 return {
                     "symbol": symbol,
@@ -1346,6 +1377,50 @@ class FuturesTradingEngine:
                         self.logger.warning(f"取消{symbol} {otype} 订单失败: {ce}")
         except Exception as e:
             self.logger.warning(f"获取/取消TP/SL订单失败 {symbol}: {e}")
+
+    async def cleanup_orphan_tp_sl_orders(self) -> None:
+        """清理无持仓币种上的遗留止盈/止损订单。
+        典型场景：仓位被TP/SL触发后已关闭，但另一侧订单仍遗留在当前委托里。
+        """
+        try:
+            # 收集当前仍有持仓的币种
+            positions = await self.get_current_positions()
+            active_symbols = set()
+            for p in positions or []:
+                try:
+                    if p.get("symbol") and abs(float(p.get("position_amount", 0))) > 0:
+                        active_symbols.add(p.get("symbol"))
+                except Exception:
+                    continue
+
+            # 拉取所有未完成订单
+            try:
+                open_orders = await self._retry_api_call(self.futures_data_manager.client.futures_get_open_orders)
+            except Exception as e:
+                self.logger.warning(f"获取所有未完成订单失败: {e}")
+                return
+
+            # 对无持仓的币种，撤销所有TP/SL
+            for order in open_orders or []:
+                try:
+                    sym = order.get("symbol")
+                    if not sym or sym in active_symbols:
+                        continue
+                    otype = order.get("type", "")
+                    if otype in ("STOP_MARKET", "TAKE_PROFIT_MARKET"):
+                        try:
+                            await self._retry_api_call(
+                                self.futures_data_manager.client.futures_cancel_order,
+                                symbol=sym,
+                                orderId=order.get("orderId")
+                            )
+                            self.logger.info(f"[清理] 无持仓 {sym} 撤销{otype}订单 {order.get('orderId')}")
+                        except Exception as ce:
+                            self.logger.warning(f"[清理] 撤销{sym} {otype} 订单失败: {ce}")
+                except Exception:
+                    continue
+        except Exception as e:
+            self.logger.warning(f"执行TP/SL孤儿清理失败: {e}")
 
     async def _retry_api_call(self, func, *args, retries: int = 3, delay: float = 2.0, backoff: float = 2.0, **kwargs):
         """带重试的API调用。

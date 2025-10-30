@@ -8,13 +8,14 @@
 ### 核心功能
 - **期货交易专精**: 专为 Binance U本位合约设计
 - **AI驱动决策**: 集成 DeepSeek AI 进行智能市场分析
-- **多时间周期分析**: 支持从1分钟到周线的全方位技术分析
+- **时间周期优化**: 核心周期为 `1m, 15m, 1h, 1d, 1M`（原 `4h` 替换为 `1m`）
 - **风险管理系统**: 内置多层风险控制和安全验证
 - **实时数据处理**: 高效的异步数据获取和处理架构
 
 ### 技术亮点
 - **异步架构**: 全异步设计，支持高并发数据处理
-- **多策略支持**: 保守、激进、趋势跟踪等多种交易策略
+- **策略标签**: `--strategy` 仅作为标签记录，不再绑定“保守/激进”等模板
+- **杠杆设置优化**: 启动时不再批量修改各币种杠杆；仅在开/加仓时按AI建议或配置设置相应杠杆
 - **智能杠杆管理**: 基于市场条件和风险评估的动态杠杆调整
 - **历史记录系统**: 完整的交易决策和AI分析历史追踪
 - **测试网支持**: 安全的模拟交易环境
@@ -62,13 +63,10 @@ apis:
 
 ```bash
 # 仅分析模式（推荐先测试）
-python main.py --strategy aggressive
+python main.py
 
-# 保守策略自动分析
-python main.py --strategy conservative
-
-# 趋势跟踪策略自动分析
-python main.py --strategy trend_following
+# 自定义策略标签（仅用于记录）
+python main.py --strategy my_label
 ```
 
 #### ⚡ 实际交易执行（谨慎使用）
@@ -78,11 +76,11 @@ python main.py --strategy trend_following
 ```bash
 # 🧪 测试网真实交易（安全，推荐先使用）
 # 需要先配置testnet: true和real_trading_enabled: true
-python main.py --strategy aggressive --execute
+python main.py --execute
 
 # 🔥 主网真实交易（极度谨慎，使用真实资金）
 # 需要先配置testnet: false和real_trading_enabled: true
-python main.py --strategy conservative --execute  # 建议先用保守策略
+python main.py --execute
 ```
 
 ## 🔴 真实交易快速配置
@@ -125,7 +123,7 @@ trading:
 
 **📖 详细配置**: 完整配置说明请查看 [`REAL_TRADING_GUIDE.md`](REAL_TRADING_GUIDE.md)
 
-### 🤖 AI智能决策功能
+### 🤖 AI智能决策功能（更新）
 
 **AI现在可以决策的参数（已扩展）**：
 - ✅ 交易动作：`long/short/add_to_long/add_to_short/reduce_long/reduce_short/close_long/close_short/adjust_tp_sl/cancel_tp_sl`
@@ -149,14 +147,21 @@ trading:
 - 默认仅等待 12 分钟（`trading.order_settings.limit_order.max_wait_time: 720`）
 - 超时未成交则取消订单并记录失败，不会自动回退为市价单
 
-#### 🎯 功能特性
+#### 🎯 功能特性（重要变更）
 - **会话跟踪**: 自动记录运行时长和AI调用次数
 - **智能上下文**: AI了解当前会话状态和历史调用
 - **思考记录**: AI推理过程自动保存到 `history/think.txt`
 - **15分钟周期**: 专门优化的交易分析频率
 - **历史记录**: 完整的输入输出数据记录
- - **告警与重试**: API失败会自动重试（指数退避），最终失败写入 `alarm.txt` 并在Web面板顶部展示
- - **最小名义价值保护**: 非 reduce-only 订单自动提升至不少于配置的 USDT 名义价值（默认 5 USDT）
+- **告警与重试**: API失败会自动重试（指数退避），最终失败写入 `alarm.txt` 并在Web面板顶部展示
+- **最小名义价值保护**: 非 reduce-only 订单自动提升至不少于配置的 USDT 名义价值（默认 5 USDT）
+
+提示工程更新：
+- 移除“🎯 你的职责 1-4”段落（不再强调“你是实际执行者”等固定措辞）
+- 保留“目标是10万美金”的整体目标
+- 分析时间周期输入简化为 1m
+- 不再注入“请在您的分析中包含：1-4条”的固定结构，由AI自主组织
+- `--strategy` 不再使用内置模板，“保守/激进/趋势”等提示已移除
 
 
 

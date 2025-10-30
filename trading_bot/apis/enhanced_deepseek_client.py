@@ -8,6 +8,7 @@ import aiohttp
 import json
 import logging
 import time
+import re
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 
@@ -48,7 +49,7 @@ class EnhancedDeepSeekClient:
         futures_data: Dict[str, Any],
         user_prompt: str,
         symbols: List[str] = ["BTC", "ETH", "SOL"],
-        focus_timeframes: List[str] = ["15m", "1h", "4h", "1d", "1M"]
+        focus_timeframes: List[str] = ["1m", "15m", "1h", "1d", "1M"]
     ) -> Dict[str, Any]:
         """
         分析全面的期货市场数据
@@ -102,24 +103,29 @@ class EnhancedDeepSeekClient:
 
             processing_time = time.time() - start_time
 
-            # 提取AI思考过程并记录到 think.txt
-            thinking_process = self._extract_thinking_process(response)
-            if thinking_process:
-                # 从user_prompt中提取session信息
-                session_info = self._extract_session_info(user_prompt)
+            # 提取AI思考过程并记录到 think.txt（优先使用 reasoning_content 字段）
+            reasoning_content = result.get('reasoning_content') or self._extract_reasoning_content_from_response(response)
+            thinking_process = reasoning_content or self._extract_thinking_process(response)
+            if not thinking_process:
+                raw_content = self._get_response_content(response)
+                thinking_process = self._build_fallback_thinking(raw_content, result)
+            cleaned_thinking = self._clean_reasoning_text(thinking_process)
 
-                # 生成市场摘要
-                market_summary = self._generate_market_summary(futures_data, symbols)
+            # 从user_prompt中提取session信息
+            session_info = self._extract_session_info(user_prompt)
 
-                # 提取最终决策
-                final_decision = self._extract_final_decision(result)
+            # 生成市场摘要
+            market_summary = self._generate_market_summary(futures_data, symbols)
 
-                await self.enhanced_history_logger.log_ai_thinking(
-                    session_info=session_info,
-                    market_summary=market_summary,
-                    reasoning_process=thinking_process,
-                    final_decision=final_decision
-                )
+            # 提取最终决策
+            final_decision = self._extract_final_decision(result)
+
+            await self.enhanced_history_logger.log_ai_thinking(
+                session_info=session_info,
+                market_summary=market_summary,
+                reasoning_process=cleaned_thinking,
+                final_decision=final_decision
+            )
 
             # 记录AI完整输出数据到 history/output.txt
             await self.enhanced_history_logger.log_ai_output(
@@ -167,13 +173,10 @@ class EnhancedDeepSeekClient:
 
     def _build_enhanced_system_prompt(self) -> str:
         """构建增强版系统提示"""
-        return """🤖 你是一个自主交易AI，拥有完全的交易决策权和资金管理权限。
+        return """🤖 你是一个自主交易AI，负责基于数据给出可直接执行的交易指令。
 
-🎯 你的职责:
-1. 【交易主导权】你不是建议者，而是实际的交易执行者
-2. 【资金管理】你直接控制所有仓位大小、杠杆倍数、入场时机
-3. 【风险控制】你负责整个账户的盈亏和风险管理
-4. 【持仓管理】你需要管理现有持仓，决定是否加仓、减仓或平仓
+⏱️ 执行节奏：系统每15分钟进行一次分析与执行，因此你的入场、止盈、止损应考虑15分钟节奏与该窗口的波动特征，避免过密触发。
+
 现在开始吧，我们的目标是10万美金
 
 📊 分析能力:
@@ -183,11 +186,10 @@ class EnhancedDeepSeekClient:
 4. 市场情绪和资金流向分析
 5. 持仓状态评估和动态调整
 
-⚠️ 重要提醒 - 你是真实交易者:
-- 你的每个决策都会立即执行真实交易
-- 你直接控制真实资金，盈亏都会影响账户余额
-- 你需要考虑现有持仓状态，避免重复建仓或冲突操作
-- 你的仓位管理决策将直接影响整体投资组合风险
+⚠️ 重要提醒 - 实盘约束:
+- 你的建议会被引擎直接执行
+- 需要考虑现有持仓状态，避免重复建仓或冲突操作
+- 你的仓位管理建议会直接影响整体投资组合风险
 - 根据市场情况智能选择订单类型：
   * MARKET订单：趋势明确、需要快速进出场时使用
   * LIMIT订单：市场波动大、希望精确控制价格时使用
@@ -338,6 +340,7 @@ class EnhancedDeepSeekClient:
 - 合理的杠杆和仓位管理建议
 
 执行约束与格式要求:
+- 分析与执行频率为每15分钟一次；止盈/止损与入场价格请结合15分钟回看窗口与波动，避免过于紧密导致频繁触发
 - 新建/加仓请使用 usdt_amount 指定实际USDT金额（必填）
 - 已有持仓的管理请使用 reduce_percent / reduce_usdt / close_percent 表达减仓或平仓幅度
 - 平/减仓需要 reduce-only（系统会自动处理）
@@ -346,20 +349,16 @@ class EnhancedDeepSeekClient:
   * 多头仓位：stop_loss < 当前价 − 1 tick；take_profit > 当前价 + 1 tick
   * 空头仓位：stop_loss > 当前价 + 1 tick；take_profit < 当前价 − 1 tick
   * 如果不确定 tick 大小，至少保证严格小于/大于当前价且不要等于当前价
+- 交易节奏与阈值：
+  * 若信心度（confidence）< 60，请优先选择 hold，避免过度交易和手续费滚动损耗
+  * 只有信心度 ≥ 60 的建议会被执行，低于 60 的建议将被忽略
 """
         return prompt
 
     def _extract_thinking_process(self, response: Dict[str, Any]) -> str:
         """从AI响应中提取思考过程"""
         try:
-            content = ""
-            if isinstance(response, dict):
-                if 'choices' in response and response['choices']:
-                    content = response['choices'][0].get('message', {}).get('content', '')
-                elif 'content' in response:
-                    content = response['content']
-                elif isinstance(response, str):
-                    content = response
+            content = self._get_response_content(response)
 
             # 查找思考过程部分
             thinking_markers = [
@@ -393,6 +392,127 @@ class EnhancedDeepSeekClient:
         except Exception as e:
             self.logger.warning(f"提取思考过程失败: {e}")
             return ""
+
+    def _get_response_content(self, response: Any) -> str:
+        """从模型原始响应中提取 content 字符串"""
+        try:
+            if isinstance(response, dict):
+                if 'choices' in response and response['choices']:
+                    return response['choices'][0].get('message', {}).get('content', '') or ''
+                if 'content' in response:
+                    return response.get('content') or ''
+            if isinstance(response, str):
+                return response
+        except Exception:
+            pass
+        return ''
+
+    def _extract_reasoning_content_from_response(self, response: Any) -> Optional[str]:
+        """从模型响应的 JSON 中提取 reasoning_content 字段"""
+        try:
+            content = self._get_response_content(response)
+            if not content:
+                return None
+            json_str = None
+            if '```json' in content:
+                start = content.find('```json') + 7
+                end = content.find('```', start)
+                json_str = content[start:end].strip() if end > start else content[start:].strip()
+            elif content.strip().startswith('{'):
+                json_str = content.strip()
+            if not json_str:
+                return None
+            data = json.loads(json_str)
+            rc = data.get('reasoning_content') or data.get('reasoning') or data.get('thinking')
+            if isinstance(rc, str):
+                return rc.strip()
+            return None
+        except Exception:
+            return None
+
+    def _build_fallback_thinking(self, raw_content: str, parsed_result: Dict[str, Any]) -> str:
+        """当未显式提供“思考过程”时，生成一段结构化的回退思考文本。
+
+        优先使用原始 content 的非JSON部分；若为空，则基于解析结果拼接摘要。
+        """
+        try:
+            # 尝试移除代码块中的JSON，保留文字说明
+            text = raw_content or ''
+            if '```' in text:
+                # 去掉 ```json ... ``` 代码块
+                out = []
+                skip = False
+                for line in text.splitlines():
+                    if line.strip().startswith('```'):
+                        skip = not skip
+                        continue
+                    if not skip:
+                        out.append(line)
+                text = '\n'.join(out).strip()
+
+            if text and len(text) > 30:
+                return ("未检测到明确的‘思考过程’段落，以下为原文说明摘要：\n" + text)[:2000]
+
+            # 基于解析结果构建思考
+            parts = ["未检测到明确的‘思考过程’，使用结构化回退："]
+
+            mv = parsed_result.get('market_overview', {})
+            if mv:
+                sentiment = mv.get('overall_sentiment')
+                phase = mv.get('market_phase')
+                if sentiment or phase:
+                    parts.append(f"- 市场概览：情绪={sentiment}, 阶段={phase}")
+
+            recs = parsed_result.get('trading_decisions', []) or parsed_result.get('recommendations', [])
+            if recs:
+                parts.append("- 交易建议摘要：")
+                for rec in recs[:5]:
+                    sym = rec.get('symbol')
+                    act = rec.get('action')
+                    conf = rec.get('confidence')
+                    lev = rec.get('leverage')
+                    rsn = rec.get('reason') or rec.get('order_reasoning') or ''
+                    parts.append(f"  * {sym} {str(act).upper()} {lev}x (信心度 {conf}%) 理由: {rsn}")
+
+            if len(parts) == 1:
+                parts.append("- 原始返回不包含思考过程与结构化字段")
+
+            return '\n'.join(parts)[:2000]
+        except Exception:
+            return "未检测到明确的‘思考过程’，且无法构建回退摘要"
+
+    def _clean_reasoning_text(self, text: str, max_len: int = 2000) -> str:
+        """清理 reasoning_content 为适合再次输入Prompt的纯文本。
+
+        - 去除代码块围栏与内联反引号
+        - 去除Markdown标题标记（#、## 等）
+        - 处理链接语法 [text](url) -> text (url)
+        - 规范多余空白，限制最大长度
+        """
+        if not text:
+            return ""
+        try:
+            s = str(text)
+            # 去除三引号代码块
+            s = re.sub(r"```[\s\S]*?```", "\n", s)
+            # 去除内联反引号
+            s = s.replace("`", "")
+            # 链接 [text](url) -> text (url)
+            s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", s)
+            # 去除标题前缀 #/##/###
+            s = re.sub(r"^\s*#{1,6}\s*", "", s, flags=re.MULTILINE)
+            # 去除多余水平线/分隔
+            s = re.sub(r"^[-*_]{3,}\s*$", "", s, flags=re.MULTILINE)
+            # 规范空白：合并超过2个空行为1个
+            s = re.sub(r"\n{3,}", "\n\n", s)
+            # 去除首尾空白
+            s = s.strip()
+            # 限长
+            if len(s) > max_len:
+                s = s[:max_len]
+            return s
+        except Exception:
+            return text[:max_len]
 
     def _extract_session_info(self, user_prompt: str) -> Dict[str, Any]:
         """从用户提示中提取会话信息"""
@@ -660,7 +780,21 @@ class EnhancedDeepSeekClient:
 
             timeframe_parts.append(f"\n=== {symbol} 多时间周期分析 ===")
 
-            for timeframe in focus_timeframes:
+            # 将时间周期按粒度升序排序（分钟→小时→日线→周线→月线，且数值从小到大）
+            def tf_key(tf: str):
+                try:
+                    num = int(tf[:-1])
+                    unit = tf[-1]
+                except Exception:
+                    # 无法解析时放在最后
+                    return (99, 9999)
+
+                unit_rank = {"m": 0, "h": 1, "d": 2, "w": 3, "M": 4}.get(unit, 98)
+                return (unit_rank, num)
+
+            sorted_tfs = sorted(focus_timeframes, key=tf_key)
+
+            for timeframe in sorted_tfs:
                 if timeframe not in timeframe_indicators:
                     continue
 
@@ -871,19 +1005,26 @@ class EnhancedDeepSeekClient:
                 json_content = None
 
             if json_content:
-                parsed_result = json.loads(json_content)
+                parsed_json = json.loads(json_content)
 
                 # 验证响应结构
-                if self._validate_analysis_structure(parsed_result):
-                    return parsed_result
+                if self._validate_analysis_structure(parsed_json):
+                    # 透传 reasoning_content（若存在）
+                    result = dict(parsed_json)
+                    if "reasoning_content" in parsed_json:
+                        result["reasoning_content"] = parsed_json.get("reasoning_content")
+                    return result
                 else:
-                    # 如果结构不完整，返回基础解析
-                    return {
-                        "market_overview": parsed_result.get("market_overview", {}),
-                        "recommendations": parsed_result.get("recommendations", []),
+                    # 如果结构不完整，返回基础解析，并透传 reasoning_content（若存在）
+                    base = {
+                        "market_overview": parsed_json.get("market_overview", {}),
+                        "recommendations": parsed_json.get("recommendations", []),
                         "analysis_quality": "partial",
                         "raw_response": content
                     }
+                    if "reasoning_content" in parsed_json:
+                        base["reasoning_content"] = parsed_json.get("reasoning_content")
+                    return base
             else:
                 # 如果不是JSON格式，尝试提取关键信息
                 return self._extract_key_insights(content)
