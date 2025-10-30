@@ -1,5 +1,5 @@
 # 期货交易机器人 | Futures Trading Bot
-
+目前还在优化功能和prompt
 一个专业的加密货币期货交易机器人，集成了 Binance Futures API 和 DeepSeek AI，支持多时间周期分析和智能交易决策。
 ![项目页面截图](./webpage.png)
 ![项目页面截图](./webpage-2.jpg)
